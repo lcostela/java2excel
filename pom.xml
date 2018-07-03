@@ -32,53 +32,51 @@
     <groupId>io.github.lcostela</groupId>
     <artifactId>java2excel</artifactId>
     <version>0.0.1.unusable</version>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
     <name>Java to Excel</name>
-
     <description>Library to convert Java classes with annotations to Excel file.</description>
-
+    <url>https://github.com/lcostela/java2excel</url>
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
     <developers>
         <developer>
             <id>lcostela</id>
             <name>Luis Costela</name>
             <organization>Myself</organization>
+            <organizationUrl>https://github.com/lcostela</organizationUrl>
         </developer>
     </developers>
-
+    <scm>
+        <url>git@github.com:lcostela/java2excel.git</url>
+        <connection>scm:git:git@github.com:lcostela/java2excel.git</connection>
+        <developerConnection>scm:git:git@github.com:lcostela/java2excel.git</developerConnection>
+    </scm>
     <properties>
-        <jdkVersion>1.8</jdkVersion>
+        <!-- Build properties -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <apachePoiVersion>3.17</apachePoiVersion>
-        <apacheCommons3>3.7</apacheCommons3>
+        <!-- Versions -->
+        <apache.poi.version>3.17</apache.poi.version>
+        <apache.commons.lang3.version>3.7</apache.commons.lang3.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>${apachePoiVersion}</version>
+            <version>${apache.poi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>${apachePoiVersion}</version>
+            <version>${apache.poi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>${apacheCommons3}</version>
+            <version>${apache.commons.lang3.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.springframework/spring-core -->
         <dependency>
@@ -92,7 +90,40 @@
             <artifactId>persistence-api</artifactId>
             <version>1.0.2</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                    <compilerVersion>8</compilerVersion>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.7</version>
+                <configuration>
+                    <formats>
+                        <format>html</format>
+                        <format>xml</format>
+                    </formats>
+                    <check/>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
