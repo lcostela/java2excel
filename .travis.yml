@@ -10,4 +10,4 @@ jdk:
 script: mvn clean verify
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -t e1c3b44e-c681-4a3a-a1ff-bbaf340b5661
