@@ -35,151 +35,142 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.util.ReflectionUtils;
 
-import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by Luis Costela.
  */
 public class Java2ExcelConverter<T> {
 
-  private Class<T> clazz;
+    private Class<T> clazz;
+    private final Logger logger = Logger.getLogger(Java2ExcelConverter.class.getName());
 
-  public Java2ExcelConverter(Class<T> clazz) {
-    this.clazz = clazz;
-  }
-
-  private Class<T> obtainClass() {
-    return clazz;
-  }
-
-  public Workbook toWorkBook(List<T> itemReport, String name) throws IllegalTypeOfAttribute {
-    checkClassEligibleToConvert(obtainClass());
-    Workbook workbook = new XSSFWorkbook();
-    Sheet sheet = workbook.createSheet(name);
-    Row row = sheet.createRow(0);
-    generateHeaders(obtainClass(), row);
-    int i = 1;
-    for (T item : itemReport) {
-      row = sheet.createRow(i);
-      generateRow(item, row);
-      i++;
+    public Java2ExcelConverter(Class<T> clazz) {
+        this.clazz = clazz;
     }
-    final int numberOfColumns = getNumberOfColumns(obtainClass());
-    autoSizeColumns(sheet, numberOfColumns);
-    sheet.setAutoFilter(new CellRangeAddress(0, i, 0, numberOfColumns));
-    return workbook;
-  }
 
-  private void checkClassEligibleToConvert(Class<T> clazz) throws IllegalTypeOfAttribute {
-    List<Field> attributes = FieldUtils.getAllFieldsList(clazz);
-    final Class[] classes = {Long.class, String.class, Double.class, LocalDate.class};
-    try {
-      compareClasses(attributes, classes);
-    } catch (IllegalTypeOfAttribute illegalTypeOfAttribute) {
-      //  illegalTypeOfAttribute.printStackTrace();
-      //TODO: log.err
-      throw illegalTypeOfAttribute;
+    private Class<T> obtainClass() {
+        return clazz;
     }
-  }
 
-  private void compareClasses(List<Field> attributes, Class[] classes) throws IllegalTypeOfAttribute {
-    for (Field attribute : attributes) {
-      boolean cast = false;
-      for (Class klazz : classes) {
-        if (fieldIsFromClass(attribute, klazz)) {
-          cast = true;
-          break;
+    public Workbook toWorkBook(List<T> itemReport, String name) throws IllegalTypeOfAttribute {
+        checkClassEligibleToConvert(obtainClass());
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet(name);
+        Row row = sheet.createRow(0);
+        generateHeaders(obtainClass(), row);
+        int i = 1;
+        for (T item : itemReport) {
+            row = sheet.createRow(i);
+            generateRow(item, row);
+            i++;
         }
-      }
-      if (!cast && !attribute.isAnnotationPresent(Enumerated.class)) {
-        throw new IllegalTypeOfAttribute();
-      }
+        final int numberOfColumns = getNumberOfColumns(obtainClass());
+        autoSizeColumns(sheet, numberOfColumns);
+        sheet.setAutoFilter(new CellRangeAddress(0, i, 0, numberOfColumns));
+        return workbook;
     }
-  }
 
-  private boolean fieldIsFromClass(Field field, Class clazz) {
-    return field.getType().equals(clazz);
-  }
-
-  private int getNumberOfColumns(Class<T> item) {
-
-    int numberOfColumns = 0;
-    Method[] m = new Method[0];
-    try {
-      m = ReflectionUtils.getAllDeclaredMethods(Class.forName(item.newInstance().getClass().getName()));
-    } catch (ClassNotFoundException e) {
-      // todo log.err e.printStackTrace();
-    } catch (IllegalAccessException e) {
-      e.printStackTrace();
-    } catch (InstantiationException e) {
-      e.printStackTrace();
+    private void checkClassEligibleToConvert(Class<T> clazz) throws IllegalTypeOfAttribute {
+        List<Field> attributes = FieldUtils.getAllFieldsList(clazz);
+        final Class[] classes = {Long.class, String.class, Double.class, LocalDate.class};
+        try {
+            compareClasses(attributes, classes);
+        } catch (IllegalTypeOfAttribute illegalTypeOfAttribute) {
+            //todo message
+            logger.log(Level.SEVERE, "Message...", illegalTypeOfAttribute);
+            throw illegalTypeOfAttribute;
+        }
     }
-    for (Method method : m) {
-      if (method.getAnnotation(CellOrder.class) != null) {
-        numberOfColumns++;
-      }
-    }
-    return numberOfColumns;
-  }
 
-  private void generateRow(T item, Row row) {
-    try {
-      Method[] m = ReflectionUtils.getAllDeclaredMethods(Class.forName(item.getClass().getName()));
-      for (Method method : m) {
-        if (method.getAnnotation(CellOrder.class) != null) {
-          int columnNumber = method.getAnnotation(CellOrder.class).value();
-          Cell cel = row.createCell(columnNumber);
-          Object value = method.invoke(item);
-          if (value != null) {
-            if (value instanceof String) {
-              cel.setCellValue((String) value);
-            } else if (value instanceof Long) {
-              cel.setCellValue((Long) value);
-            } else if (value instanceof Integer) {
-              cel.setCellValue((Integer) value);
-            } else if (value instanceof Double) {
-              cel.setCellValue((Double) value);
-            } else if (value instanceof LocalDate) {
-              cel.setCellValue(value.toString());
-            } else if (value instanceof Enum<?>) {
-              cel.setCellValue(((Enum) value).name());
+    private void compareClasses(List<Field> attributes, Class[] classes) throws IllegalTypeOfAttribute {
+        for (Field attribute : attributes) {
+            boolean cast = false;
+            for (Class klazz : classes) {
+                if (fieldIsFromClass(attribute, klazz)) {
+                    cast = true;
+                    break;
+                }
             }
-          }
+            //todo: revisar
+            if (!cast && !attribute.getType().isEnum()) {
+                throw new IllegalTypeOfAttribute();
+            }
         }
-      }
-    } catch (IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
-      //todo log.err e.printStackTrace();
     }
-  }
 
-  private void generateHeaders(Class<T> item, Row row) {
-    try {
-      Method[] m = ReflectionUtils.getAllDeclaredMethods(Class.forName(item.newInstance().getClass().getName()));
-      for (Method method : m) {
-        if (method.getAnnotation(CellOrder.class) != null) {
-          int columnNumber = method.getAnnotation(CellOrder.class).value();
-          row.createCell(columnNumber).setCellValue(method.getAnnotation(CellHeader.class).value());
+    private boolean fieldIsFromClass(Field field, Class clazz) {
+        return field.getType().equals(clazz);
+    }
+
+    private int getNumberOfColumns(Class<T> item) {
+
+        int numberOfColumns = 0;
+        Method[] m = new Method[0];
+        m = item.getDeclaredMethods();
+        for (Method method : m) {
+            if (method.getAnnotation(CellOrder.class) != null) {
+                numberOfColumns++;
+            }
         }
-      }
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
-    } catch (InstantiationException e) {
-      e.printStackTrace();
-    } catch (IllegalAccessException e) {
-      e.printStackTrace();
+        return numberOfColumns;
     }
-  }
 
-  private void autoSizeColumns(Sheet sheet, int numberOfColumns) {
-    for (int i = 0; i < numberOfColumns; i++) {
-      sheet.autoSizeColumn(i);
+    private void generateRow(T item, Row row) {
+        try {
+            Class c = item.getClass();
+            Method[] m = c.getDeclaredMethods();
+            for (Method method : m) {
+                if (method.getAnnotation(CellOrder.class) != null) {
+                    int columnNumber = method.getAnnotation(CellOrder.class).value();
+                    Cell cel = row.createCell(columnNumber);
+                    Object value = method.invoke(item);
+                    if (value != null) {
+                        if (value instanceof String) {
+                            cel.setCellValue((String) value);
+                        } else if (value instanceof Long) {
+                            cel.setCellValue((Long) value);
+                        } else if (value instanceof Integer) {
+                            cel.setCellValue((Integer) value);
+                        } else if (value instanceof Double) {
+                            cel.setCellValue((Double) value);
+                        } else if (value instanceof LocalDate) {
+                            cel.setCellValue(value.toString());
+                        } else if (value instanceof Enum<?>) {
+                            cel.setCellValue(((Enum) value).name());
+                        }
+                    }
+                }
+            }
+        } catch (IllegalAccessException e) {
+            //todo message
+            logger.log(Level.SEVERE, "Message...", e);
+        } catch (InvocationTargetException e) {
+            //todo message
+            logger.log(Level.SEVERE, "Message2...", e);
+        }
     }
-  }
+
+    private void generateHeaders(Class<T> item, Row row) {
+        Method[] m = item.getDeclaredMethods();
+        for (Method method : m) {
+            if (method.getAnnotation(CellOrder.class) != null) {
+                int columnNumber = method.getAnnotation(CellOrder.class).value();
+                row.createCell(columnNumber).setCellValue(method.getAnnotation(CellHeader.class).value());
+            }
+        }
+    }
+
+    private void autoSizeColumns(Sheet sheet, int numberOfColumns) {
+        for (int i = 0; i < numberOfColumns; i++) {
+            sheet.autoSizeColumn(i);
+        }
+    }
 }
